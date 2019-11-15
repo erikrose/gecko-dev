@@ -106,6 +106,17 @@ let ACTORS = {
     allFrames: true,
   },
 
+  Fathom: {
+    child: {
+      matches: ["*://*/*"], // See MatchPattern.webidl.
+      moduleURI: "resource:///actors/FathomChild.jsm",
+      group: "browsers", // TODO: Do we need this?
+      events: {
+        DOMContentLoaded: {},
+      },
+    },
+  },
+
   FormValidation: {
     parent: {
       moduleURI: "resource:///actors/FormValidationParent.jsm",
