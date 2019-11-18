@@ -30,4 +30,27 @@ class FathomChild extends JSWindowActorChild {
     // TODO: Something like Fathom.runRuleset(this.document);
     console.log(this.contentWindow.location.href);
   }
+
+  addCSSBorderAndLabel(type) {
+    let color = "";
+    switch (type) {
+      case "shopping":
+        color = "red";
+        break;
+      case "article":
+        color = "blue";
+        break;
+    }
+    this.document.body.style.border = `5px solid ${color}`;
+    const labelElement = this.document.createElement("SPAN");
+    labelElement.style.position = "absolute";
+    labelElement.style.padding = "10px";
+    labelElement.style.top = "0";
+    labelElement.style.left = "50%";
+    labelElement.style.transform = "translateX(-50%)";
+    labelElement.style.backgroundColor = "white";
+    labelElement.style.fontSize = "32px";
+    labelElement.innerText = type;
+    this.document.body.append(labelElement);
+  }
 }
