@@ -48,7 +48,8 @@ class FathomChild extends JSWindowActorChild {
     labelElement.style.top = "0";
     labelElement.style.left = "50%";
     labelElement.style.transform = "translateX(-50%)";
-    labelElement.style.backgroundColor = "white";
+    labelElement.style.backgroundColor = color;
+    labelElement.style.color = "white";
     labelElement.style.fontSize = "32px";
     labelElement.innerText = type;
     this.document.body.append(labelElement);
