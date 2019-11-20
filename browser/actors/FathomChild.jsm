@@ -13,6 +13,11 @@ var EXPORTED_SYMBOLS = ["FathomChild"];
 //   "resource://gre/modules/Fathom.jsm"
 // );
 
+const COLORS = {
+  shopping: "red",
+  article: "blue",
+}
+
 class FathomChild extends JSWindowActorChild {
   constructor() {
     super();
@@ -32,14 +37,10 @@ class FathomChild extends JSWindowActorChild {
   }
 
   addCSSBorderAndLabel(type) {
-    let color = "";
-    switch (type) {
-      case "shopping":
-        color = "red";
-        break;
-      case "article":
-        color = "blue";
-        break;
+    const color = COLORS[type];
+    if (!color) {
+      console.error(`Unknown type ${type}. Border and label will not be added to this page.`);
+      return;
     }
     this.document.body.style.border = `5px solid ${color}`;
     const labelElement = this.document.createElement("SPAN");
