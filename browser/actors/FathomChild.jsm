@@ -13,6 +13,11 @@ var EXPORTED_SYMBOLS = ["FathomChild"];
 //   "resource://gre/modules/Fathom.jsm"
 // );
 
+const COLORS = {
+  shopping: "red",
+  article: "blue",
+}
+
 class FathomChild extends JSWindowActorChild {
   constructor() {
     super();
@@ -29,5 +34,25 @@ class FathomChild extends JSWindowActorChild {
   executeFathom() {
     // TODO: Something like Fathom.runRuleset(this.document);
     console.log(this.contentWindow.location.href);
+  }
+
+  addCSSBorderAndLabel(type) {
+    const color = COLORS[type];
+    if (!color) {
+      console.error(`Unknown type ${type}. Border and label will not be added to this page.`);
+      return;
+    }
+    this.document.body.style.border = `5px solid ${color}`;
+    const labelElement = this.document.createElement("SPAN");
+    labelElement.style.position = "absolute";
+    labelElement.style.padding = "10px";
+    labelElement.style.top = "0";
+    labelElement.style.left = "50%";
+    labelElement.style.transform = "translateX(-50%)";
+    labelElement.style.backgroundColor = color;
+    labelElement.style.color = "white";
+    labelElement.style.fontSize = "32px";
+    labelElement.innerText = type;
+    this.document.body.append(labelElement);
   }
 }
