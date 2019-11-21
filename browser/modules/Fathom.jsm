@@ -6,7 +6,7 @@
 
 var EXPORTED_SYMBOLS = ["Fathom"];
 
-var Fathom = {
+const Fathom = {
   /**
    * Plays peekaboo
    */
