@@ -180,6 +180,7 @@ EXTRA_JS_MODULES += [
     'Deprecated.jsm',
     'E10SUtils.jsm',
     'EventEmitter.jsm',
+    'Fathom.jsm',
     'FileUtils.jsm',
     'FindBarContent.jsm',
     'Finder.jsm',

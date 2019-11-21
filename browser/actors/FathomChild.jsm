@@ -13,7 +13,7 @@ var EXPORTED_SYMBOLS = ["FathomChild"];
 //   "resource://gre/modules/Fathom.jsm"
 // );
 
-const { Fathom } = ChromeUtils.import("resource:///modules/Fathom.jsm");
+const { Fathom } = ChromeUtils.import("resource://gre/modules/Fathom.jsm");
 
 class FathomChild extends JSWindowActorChild {
   constructor() {

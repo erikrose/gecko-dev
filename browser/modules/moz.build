@@ -143,7 +143,6 @@ EXTRA_JS_MODULES += [
     'Discovery.jsm',
     'EveryWindow.jsm',
     'ExtensionsUI.jsm',
-    'Fathom.jsm',
     'FaviconLoader.jsm',
     'HomePage.jsm',
     'LaterRun.jsm',
