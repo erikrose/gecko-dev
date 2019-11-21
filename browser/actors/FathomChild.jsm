@@ -16,7 +16,7 @@ var EXPORTED_SYMBOLS = ["FathomChild"];
 const COLORS = {
   shopping: "red",
   article: "blue",
-}
+};
 
 class FathomChild extends JSWindowActorChild {
   constructor() {
@@ -39,7 +39,9 @@ class FathomChild extends JSWindowActorChild {
   addCSSBorderAndLabel(type) {
     const color = COLORS[type];
     if (!color) {
-      console.error(`Unknown type ${type}. Border and label will not be added to this page.`);
+      console.error(
+        `Unknown type ${type}. Border and label will not be added to this page.`
+      );
       return;
     }
     this.document.body.style.border = `5px solid ${color}`;
