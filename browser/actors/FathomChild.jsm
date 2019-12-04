@@ -6,7 +6,11 @@
 
 var EXPORTED_SYMBOLS = ["FathomChild"];
 
-const {fathom: {dom, rule, ruleset, score, type, utils: {inlineTextLength}}} = ChromeUtils.import("resource://gre/modules/third_party/fathom/fathom.js");
+ChromeUtils.defineModuleGetter(
+  this,
+  "fathom",
+  "resource://gre/modules/third_party/fathom/fathom.js"
+);
 
 class FathomChild extends JSWindowActorChild {
   constructor() {
@@ -22,6 +26,7 @@ class FathomChild extends JSWindowActorChild {
   }
 
   executeFathom() {
+    const {dom, rule, ruleset, score, type, utils: {inlineTextLength}} = fathom;
     console.log(this.contentWindow.location.href);
 
     // An example ruleset that hits some public and private utils, just to
