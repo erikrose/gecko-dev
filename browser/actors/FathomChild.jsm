@@ -30,6 +30,37 @@ class FathomChild extends JSWindowActorChild {
     }
   }
 
+  executeFathom() {
+    const shoppingRules = (new ShoppingRuleset()).makeRuleset();
+    const articleRules = (new ArticleRuleset()).makeRuleset();
+    console.log(shoppingRules.against(this.document).get("shopping")[0].scoreFor("shopping"));
+    console.log(articleRules.against(this.document).get("article")[0].scoreFor("article"));
+  }
+
+  addCSSBorderAndLabel(type) {
+    const color = COLORS[type];
+    if (!color) {
+      console.error(
+        `Unknown type ${type}. Border and label will not be added to this page.`
+      );
+      return;
+    }
+    this.document.body.style.border = `5px solid ${color}`;
+    const labelElement = this.document.createElement("SPAN");
+    labelElement.style.position = "absolute";
+    labelElement.style.padding = "10px";
+    labelElement.style.top = "0";
+    labelElement.style.left = "50%";
+    labelElement.style.transform = "translateX(-50%)";
+    labelElement.style.backgroundColor = color;
+    labelElement.style.color = "white";
+    labelElement.style.fontSize = "32px";
+    labelElement.innerText = type;
+    this.document.body.append(labelElement);
+  }
+}
+
+class ShoppingRuleset {
   caselessIncludes(haystack, needle) {
     return haystack.toLowerCase().includes(needle.toLowerCase());
   }
@@ -482,9 +513,9 @@ class FathomChild extends JSWindowActorChild {
     return Array.from(fnode.element.querySelectorAll('*[id*="payment" i]')).length >= 1;
   }
 
-  executeFathom() {
+  makeRuleset() {
     const {dom, rule, ruleset, score, type} = fathom;
-    const shoppingRules = ruleset(
+    return ruleset(
       [
         rule(dom('html'), type('shopping')),
         rule(type('shopping'), score(this.numberOfCartOccurrences.bind(this)), {name: 'numberOfCartOccurrences'}),
@@ -587,28 +618,183 @@ class FathomChild extends JSWindowActorChild {
         ["shopping", -0.7523059248924255]
       ]
     );
-    console.log(shoppingRules.against(this.document).get("shopping")[0].scoreFor("shopping"));
+  }
+}
+
+class ArticleRuleset {
+  constructor() {
+    // Memoize expensive results, so they are only computed once.
+    this.highestScoringParagraphs = null;
+    this.numParagraphsInAllDivs = null;
   }
 
-  addCSSBorderAndLabel(type) {
-    const color = COLORS[type];
-    if (!color) {
-      console.error(
-        `Unknown type ${type}. Border and label will not be added to this page.`
-      );
-      return;
+  // Text nodes are not targetable via document.querySelectorAll (i.e. Fathom's `dom` method).
+  // We instead use a heuristic to estimate the number of paragraph-like text nodes based on the
+  // number of descendant <br> elements and list elements in the <div>
+  numParagraphTextNodesInDiv({element}) {
+    if (element.tagName !== "DIV") {
+      return 0;
     }
-    this.document.body.style.border = `5px solid ${color}`;
-    const labelElement = this.document.createElement("SPAN");
-    labelElement.style.position = "absolute";
-    labelElement.style.padding = "10px";
-    labelElement.style.top = "0";
-    labelElement.style.left = "50%";
-    labelElement.style.transform = "translateX(-50%)";
-    labelElement.style.backgroundColor = color;
-    labelElement.style.color = "white";
-    labelElement.style.fontSize = "32px";
-    labelElement.innerText = type;
-    this.document.body.append(labelElement);
+    const listDescendants = Array.from(element.querySelectorAll("ol")).concat(Array.from(element.querySelectorAll("ul")));
+    const brDescendants = Array.from(element.querySelectorAll("br"));
+    // We assume a <br> divides two text nodes/"chunks" (a paragraph or a list)
+    return (brDescendants.length - listDescendants.length + 1);
+  }
+
+  getNumParagraphsInAllDivs(paragraphFnodes) {
+    const divWithBrFnodes = paragraphFnodes.filter(({element}) => element.tagName === "DIV");
+    return divWithBrFnodes.reduce((accumulator, currentValue) => {
+      return accumulator + currentValue.noteFor("paragraph");
+    }, 0);
+  }
+
+  isElementVisible({element}) {
+    // Have to null-check element.style to deal with SVG and MathML nodes.
+    return (
+      (!element.style || element.style.display != "none")
+      && !element.hasAttribute("hidden")
+    );
+  }
+
+  divHasBrChildElement({element}) {
+    if (element.tagName !== "DIV") {
+      return true;
+    }
+    return Array.from(element.children).some((childEle) => childEle.tagName === "BR");
+  }
+
+  pElementHasNoListItemAncestor({element}) {
+    return !element.matches("li p");
+  }
+
+  hasLongTextContent({element}) {
+    const textContentLength = element.textContent.trim().length;
+    return textContentLength >= 234; // Optimized with 10 sample pages; see /vectors/rule_output_analysis.ipynb
+  }
+
+  getHighestScoringParagraphs(fnode) {
+    return fnode._ruleset.get("paragraph");
+  }
+
+  hasEnoughParagraphs(fnode) {
+    const paragraphFnodes = this.highestScoringParagraphs || this.getHighestScoringParagraphs(fnode);
+    const paragraphsInDivsWithBrs = this.numParagraphsInAllDivs || this.getNumParagraphsInAllDivs(paragraphFnodes);
+    return (paragraphFnodes.length + paragraphsInDivsWithBrs) >= 9; // Optimized with 40 training samples
+  }
+
+  hasArticleElement(fnode) {
+    return !!(fnode.element.ownerDocument.querySelector("article"));
+  }
+
+  paragraphElementsHaveSiblingsWithSameTagName(fnode) {
+    const paragraphFnodes = this.highestScoringParagraphs || this.getHighestScoringParagraphs(fnode);
+    const numSiblingsPerParagraphNode = [];
+    for (const fnode of paragraphFnodes) {
+      const {element} = fnode;
+      let siblingsWithSameTagName = 0;
+      if (element.tagName === "DIV") {
+        const numParagraphs = fnode.noteFor("paragraph");
+        siblingsWithSameTagName = numParagraphs - 1;
+      } else {
+        siblingsWithSameTagName = Array.from(
+          element.parentNode.children
+        ).filter(
+          node => node.tagName === element.tagName && node !== element
+        ).length;
+      }
+      numSiblingsPerParagraphNode.push(siblingsWithSameTagName);
+    }
+    const sum = numSiblingsPerParagraphNode.reduce((prev, current) => current += prev, 0);
+    // average sibling count per highest scoring paragraph node; divide by 0 returns NaN which makes the feature return false
+    return Math.round(sum / numSiblingsPerParagraphNode.length) >= 3; // Optimized with 40 training samples
+  }
+
+  mostParagraphElementsAreHorizontallyAligned(fnode) {
+    const paragraphFnodes = this.highestScoringParagraphs || this.getHighestScoringParagraphs(fnode);
+    const leftPositionVsFrequency = new Map();
+    for (const {element} of paragraphFnodes) {
+      const left = element.getBoundingClientRect().left;
+      if (leftPositionVsFrequency.get(left) === undefined) {
+        leftPositionVsFrequency.set(left, 1);
+      } else {
+        leftPositionVsFrequency.set(left, leftPositionVsFrequency.get(left) + 1);
+      }
+    }
+
+    // At least one left position should contain the majority of paragraph nodes
+    const totals = [];
+    for (const total of leftPositionVsFrequency.values()) {
+      totals.push(total);
+    }
+    const sum = totals.reduce((prev, current) => current += prev, 0);
+    // TODO: Include paragraphs inside divs with brs, see 'getNumParagraphsInAllDivs'
+    return sum >= 9; // Optimized with 40 training samples
+  }
+
+  moreParagraphElementsThanListItemsOrTableRows(fnode) {
+    const paragraphFnodes = this.highestScoringParagraphs || this.getHighestScoringParagraphs(fnode);
+    const numParagraphElements = paragraphFnodes.length;
+    const tableRowElements = fnode.element.ownerDocument.getElementsByTagName("tr");
+    const listItemElements = fnode.element.ownerDocument.getElementsByTagName("li");
+    // TODO: Include paragraphs inside divs with brs, see 'getNumParagraphsInAllDivs'
+    // TODO: the greater the difference, the higher the score
+    return numParagraphElements > tableRowElements.length && numParagraphElements > listItemElements.length;
+  }
+
+  headerElementIsSiblingToParagraphElements(fnode) {
+    const headerTagNames = ["H1", "H2"];
+    let counter = 0;
+    const paragraphFnodes = this.highestScoringParagraphs || this.getHighestScoringParagraphs(fnode);
+    for (const {element} of paragraphFnodes) {
+      const siblings = Array.from(element.parentNode.children).filter(node => node !== element);
+      if (siblings.some(sibling => headerTagNames.includes(sibling.tagName))) {
+        counter++;
+      }
+    }
+    // TODO: Include paragraphs inside divs with brs, see 'getNumParagraphsInAllDivs'
+    const {utils: {linearScale}} = fathom;
+    return linearScale(counter, 4, 11); // oneAt cut-off optimized with 40 samples
+  }
+
+  makeRuleset() {
+    const {dom, rule, ruleset, score, type} = fathom;
+    return ruleset([
+        /**
+         * Paragraph rules
+         */
+        // Consider all visible paragraph-ish elements
+        rule(dom("p, pre, div").when(this.isElementVisible).when(this.divHasBrChildElement.bind(this)), type("paragraph").note(this.numParagraphTextNodesInDiv)),
+        rule(type("paragraph"), score(this.pElementHasNoListItemAncestor.bind(this)), {name: "pElementHasNoListItemAncestor"}),
+        rule(type("paragraph"), score(this.hasLongTextContent.bind(this)), {name: "hasLongTextContent"}),
+        // return paragraph-ish element(s) with max score
+        rule(type("paragraph").max(), "paragraph"),
+
+        /**
+         * Article rules
+         */
+        rule(dom("html"), type("article")),
+        rule(type("article"), score(this.hasEnoughParagraphs.bind(this)), {name: "hasEnoughParagraphs"}),
+        rule(type("article"), score(this.hasArticleElement.bind(this)), {name: "hasArticleElement"}),
+        rule(type("article"), score(this.paragraphElementsHaveSiblingsWithSameTagName.bind(this)), {name: "paragraphElementsHaveSiblingsWithSameTagName"}),
+        rule(type("article"), score(this.mostParagraphElementsAreHorizontallyAligned.bind(this)), {name: "mostParagraphElementsAreHorizontallyAligned"}),
+        rule(type("article"), score(this.moreParagraphElementsThanListItemsOrTableRows.bind(this)), {name: "moreParagraphElementsThanListItemsOrTableRows"}),
+        rule(type("article"), score(this.headerElementIsSiblingToParagraphElements.bind(this)), {name: "headerElementIsSiblingToParagraphElements"}),
+        rule(type("article"), "article")
+      ],
+      [
+        ["pElementHasNoListItemAncestor", 1.9143790006637573],
+        ["hasLongTextContent", 2.991241216659546],
+        ["hasEnoughParagraphs", -6.825904369354248],
+        ["hasArticleElement", 0.5530931353569031],
+        ["paragraphElementsHaveSiblingsWithSameTagName", 5.291628837585449],
+        ["mostParagraphElementsAreHorizontallyAligned", 6.951136589050293],
+        ["moreParagraphElementsThanListItemsOrTableRows", 0.8062509894371033],
+        ["headerElementIsSiblingToParagraphElements", 9.11874008178711]
+      ],
+      [
+        ["paragraph", -3.526047468185425],
+        ["article", -3.6415750980377197]
+      ]
+    );
   }
 }
