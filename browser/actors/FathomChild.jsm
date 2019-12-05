@@ -6,12 +6,11 @@
 
 var EXPORTED_SYMBOLS = ["FathomChild"];
 
-// Example for importing a Fathom module:
-// ChromeUtils.defineModuleGetter(
-//   this,
-//   "Fathom",
-//   "resource://gre/modules/Fathom.jsm"
-// );
+ChromeUtils.defineModuleGetter(
+  this,
+  "fathom",
+  "resource://gre/modules/third_party/fathom/fathom.js"
+);
 
 const COLORS = {
   shopping: "red",
@@ -32,8 +31,19 @@ class FathomChild extends JSWindowActorChild {
   }
 
   executeFathom() {
-    // TODO: Something like Fathom.runRuleset(this.document);
+    const {dom, rule, ruleset, score, type, utils: {inlineTextLength}} = fathom;
     console.log(this.contentWindow.location.href);
+
+    // An example ruleset that hits some public and private utils, just to
+    // prove it's all there:
+    const rules = ruleset([
+      rule(dom("p"), type("paragraphish")),
+      rule(type("paragraphish"), score(fnode => inlineTextLength(fnode.element))),
+      rule(type("paragraphish"), "p")
+    ]);
+    // The actual number emitted is always 1 or close to it due to the sigmoid
+    // math. It'll throw an error on pages with no <p> tags.
+    console.log(rules.against(this.document).get("p")[0].scoreFor("paragraphish"));
   }
 
   addCSSBorderAndLabel(type) {
