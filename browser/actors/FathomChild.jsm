@@ -33,11 +33,19 @@ class FathomChild extends JSWindowActorChild {
   executeFathom() {
     const shoppingRules = (new ShoppingRuleset()).makeRuleset();
     const articleRules = (new ArticleRuleset()).makeRuleset();
-    console.log(shoppingRules.against(this.document).get("shopping")[0].scoreFor("shopping"));
-    console.log(articleRules.against(this.document).get("article")[0].scoreFor("article"));
+    const scores = {
+      "shopping": shoppingRules.against(this.document).get("shopping")[0].scoreFor("shopping"),
+      "article": articleRules.against(this.document).get("article")[0].scoreFor("article")
+    };
+    console.log(scores["shopping"]);
+    console.log(scores["article"]);
+    const predictedCategory = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
+    if (scores[predictedCategory] >= 0.5) {
+      this.addCSSBorderAndLabel(predictedCategory, scores[predictedCategory])
+    }
   }
 
-  addCSSBorderAndLabel(type) {
+  addCSSBorderAndLabel(type, score) {
     const color = COLORS[type];
     if (!color) {
       console.error(
@@ -47,7 +55,8 @@ class FathomChild extends JSWindowActorChild {
     }
     this.document.body.style.border = `5px solid ${color}`;
     const labelElement = this.document.createElement("SPAN");
-    labelElement.style.position = "absolute";
+    labelElement.style.position = "fixed";
+    labelElement.style.zIndex = "1000";
     labelElement.style.padding = "10px";
     labelElement.style.top = "0";
     labelElement.style.left = "50%";
@@ -55,7 +64,7 @@ class FathomChild extends JSWindowActorChild {
     labelElement.style.backgroundColor = color;
     labelElement.style.color = "white";
     labelElement.style.fontSize = "32px";
-    labelElement.innerText = type;
+    labelElement.innerText = `${type}: ${(score * 100).toFixed(2)}% confidence`;
     this.document.body.append(labelElement);
   }
 }
