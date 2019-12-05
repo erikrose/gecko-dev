@@ -69,6 +69,7 @@ class FathomChild extends JSWindowActorChild {
   }
 }
 
+// Adapted from mozilla-services/fathom-smoot commit 9612fcddc64096418e95b347f3bf26ca02a600f4
 function makeShoppingRuleset() {
   const {dom, rule, ruleset, score, type} = fathom;
 
@@ -629,6 +630,7 @@ function makeShoppingRuleset() {
   );
 }
 
+// Adapted from mozilla-services/fathom-smoot commit d1f0ca55cf472754fef611656d97681fa6cd049f
 function makeArticleRuleset() {
   const {dom, rule, ruleset, score, type, utils: {linearScale}} = fathom;
 
