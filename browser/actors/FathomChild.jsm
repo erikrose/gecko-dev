@@ -37,11 +37,11 @@ class FathomChild extends JSWindowActorChild {
       "shopping": shoppingRules.against(this.document).get("shopping")[0].scoreFor("shopping"),
       "article": articleRules.against(this.document).get("article")[0].scoreFor("article")
     };
-    console.log(scores["shopping"]);
-    console.log(scores["article"]);
+    console.log("shopping: ", scores["shopping"]);
+    console.log("article: ", scores["article"]);
     const predictedCategory = Object.keys(scores).reduce((a, b) => scores[a] > scores[b] ? a : b);
     if (scores[predictedCategory] >= 0.5) {
-      this.addCSSBorderAndLabel(predictedCategory, scores[predictedCategory])
+      this.addCSSBorderAndLabel(predictedCategory, scores[predictedCategory]);
     }
   }
 
@@ -53,19 +53,36 @@ class FathomChild extends JSWindowActorChild {
       );
       return;
     }
-    this.document.body.style.border = `5px solid ${color}`;
+
+    const borderWidth = "5px";
+
     const labelElement = this.document.createElement("SPAN");
-    labelElement.style.position = "fixed";
+    labelElement.style.display = "inline-block";
+    labelElement.style.position = "relative";
     labelElement.style.zIndex = "1000";
     labelElement.style.padding = "10px";
-    labelElement.style.top = "0";
+    // The label sits just inside the bounds of the border; this ensures the text looks centered in the label
+    labelElement.style.top = `-${borderWidth}`;
     labelElement.style.left = "50%";
     labelElement.style.transform = "translateX(-50%)";
     labelElement.style.backgroundColor = color;
     labelElement.style.color = "white";
     labelElement.style.fontSize = "32px";
+    labelElement.style.fontFamily = "sans-serif";
+    labelElement.style.lineHeight = "1.15em";
     labelElement.innerText = `${type}: ${(score * 100).toFixed(2)}% confidence`;
-    this.document.body.append(labelElement);
+
+    const borderElement = this.document.createElement("DIV");
+    borderElement.style.position = "fixed";
+    borderElement.style.zIndex = "1000";
+    borderElement.style.top = "0";
+    borderElement.style.bottom = "0";
+    borderElement.style.left = "0";
+    borderElement.style.right = "0";
+    borderElement.style.border = `${borderWidth} solid ${color}`;
+
+    borderElement.append(labelElement);
+    this.document.body.append(borderElement);
   }
 }
 
