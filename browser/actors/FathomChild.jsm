@@ -38,9 +38,14 @@ class FathomChild extends JSWindowActorChild {
   executeFathom() {
     const shoppingRules = makeShoppingRuleset();
     const articleRules = makeArticleRuleset();
+    const shoppingFnodes = shoppingRules.against(this.document).get("shopping");
+    const articleFnodes = articleRules.against(this.document).get("article");
+    // Fathom may not have found any candidate nodes, so handle this case:
+    const shoppingScore = shoppingFnodes.length === 0 ? 0 : shoppingFnodes[0].scoreFor("shopping");
+    const articleScore = articleFnodes.length === 0 ? 0 : articleFnodes[0].scoreFor("article");
     const scores = {
-      "shopping": shoppingRules.against(this.document).get("shopping")[0].scoreFor("shopping"),
-      "article": articleRules.against(this.document).get("article")[0].scoreFor("article")
+      "shopping": shoppingScore,
+      "article": articleScore,
     };
     console.log("shopping: ", scores["shopping"]);
     console.log("article: ", scores["article"]);
