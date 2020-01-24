@@ -17,6 +17,11 @@ const COLORS = {
   article: "blue",
 };
 
+const TYPE_STRING = {
+  shopping: "a shopping page",
+  article: "an article",
+};
+
 class FathomChild extends JSWindowActorChild {
   constructor() {
     super();
@@ -70,7 +75,8 @@ class FathomChild extends JSWindowActorChild {
     labelElement.style.fontSize = "32px";
     labelElement.style.fontFamily = "sans-serif";
     labelElement.style.lineHeight = "1.15em";
-    labelElement.innerText = `${type}: ${(score * 100).toFixed(2)}% confidence`;
+    const qualitativeString = this.makeQualitativeString(type, score);
+    labelElement.innerText = `${qualitativeString}\n${(score * 100).toFixed(2)}% confidence`;
 
     const borderElement = this.document.createElement("DIV");
     borderElement.style.position = "fixed";
@@ -84,6 +90,17 @@ class FathomChild extends JSWindowActorChild {
 
     borderElement.append(labelElement);
     this.document.body.append(borderElement);
+  }
+
+  makeQualitativeString(type, score) {
+    let qualitativePhrase = "May be";
+    if (score >= 0.8) {
+      qualitativePhrase = "Definitely";
+    }
+    else if (score >= 0.6) {
+      qualitativePhrase = "Probably";
+    }
+    return `${qualitativePhrase} ${TYPE_STRING[type]}`;
   }
 }
 
