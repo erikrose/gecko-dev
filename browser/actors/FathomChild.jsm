@@ -679,7 +679,7 @@ function makeArticleRuleset() {
   let numParagraphsInAllDivs;
 
   const MIN_PARAGRAPH_LENGTH = 234; // Optimized with 10 sample pages
-  const UNLIKELY_WORDS_IN_PARAGRAPH_CLASSNAMES = /comment|caption/i
+  const UNLIKELY_WORDS_IN_PARAGRAPH_CLASSNAMES = /comment|caption/i;
 
   // Text nodes are not targetable via document.querySelectorAll (i.e. Fathom's `dom` method), so we instead use
   // different heuristics based on the child elements contained inside the <div>.
@@ -921,6 +921,10 @@ function makeArticleRuleset() {
       rule(type("article"), "article")
     ],
     [
+      ["pElementHasListItemAncestor", -2.86763596534729],
+      ["hasLongTextContent", 5.575725555419922],
+      ["containsElipsisAtEndOfText", -0.13708636164665222],
+      ["classNameOfSelfOrParentContainsUnlikelyWord", -2.073239326477051],
       ["hasEnoughParagraphs", -1.0311405658721924],
       ["hasExactlyOneArticleElement", -1.2359271049499512],
       ["paragraphElementsHaveSiblingsWithSameTagName", 12.159211158752441],
