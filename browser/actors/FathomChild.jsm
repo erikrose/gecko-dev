@@ -85,7 +85,7 @@ class FathomChild extends JSWindowActorChild {
 
     const borderElement = this.document.createElement("DIV");
     borderElement.style.position = "fixed";
-    borderElement.style.zIndex = "1000";
+    borderElement.style.zIndex = "10000000";
     borderElement.style["pointer-events"] = "none";
     borderElement.style.top = "0";
     borderElement.style.bottom = "0";
